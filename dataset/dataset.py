@@ -1,48 +1,55 @@
 import os
 import pandas as pd
 from torch.utils.data import Dataset
+import numpy as np
 
 class PowerConsumptionDataset(Dataset):
-    def __init__(self, plugs_path, sm_path, num_rows, sequence_length, transform=None):
-        self.plugs_path = plugs_path
+    def __init__(self, sm_path, plugs_path, num_rows, sequence_length):
         self.sm_path = sm_path
+        self.plugs_path = plugs_path
         self.num_rows = num_rows
         self.sequence_length = sequence_length
-        self.transform = transform
-
-        self.list_sm = os.listdir(self.sm_path)
-        self.list_plugs_path = os.listdir(self.plugs_path)
-        self.num_appliances = len(self.list_plugs_path)
 
     def __len__(self):
-        return (len(self.list_sm) * self.num_rows) // self.sequence_length
+        return (self.num_rows * len(os.listdir(self.sm_path))) - self.sequence_length
+    
+    def get_plug_sequence(self, filename, idx):
+        pass
+    
+    def get_sm_sequence(self, idx: int):
+        """
+        Retrieve the sequence of the specified length from the smart meter data.
 
-    def __getitem__(self, index):
-        file_id = index // self.num_rows
-        sm_file = self.list_sm[file_id]
-        plug_folders = [os.path.join(self.plugs_path, plug) for plug in self.list_plugs_path]
+        Args:
+            idx (int): Index of the sequence
+        Returns:
+            sequence (tuple): Tuple containing the sequence and the label
+        """
 
-        # Get the dataframe for the smart meter
+        # Calculate the file index, start index, and end index
+        file_idx = idx // self.num_rows
+        start_idx = idx % self.num_rows
+        end_idx = start_idx + self.sequence_length
+
+        # Get the file name and load the file as pandas as dataframe
+        sm_files = os.listdir(self.sm_path)
+        sm_files.sort()
+        sm_file = sm_files[file_idx]
         sm_df = pd.read_csv(os.path.join(self.sm_path, sm_file), header=None)
 
-        # Store the dataframes for each plug
-        plug_dfs = {}
-        for i, plug_folder in enumerate(plug_folders):
-            plug_dfs[i] = pd.read_csv(os.path.join(plug_folder, sm_file), header=None)
+        # If the end index is greater than the number of rows in the file, then we need to load the next file
+        if end_idx + 1 > self.num_rows:
+            file_idx_2 = file_idx + 1
+            sm_file_2 = sm_files[file_idx_2]
+            sm_df_2 = pd.read_csv(os.path.join(self.sm_path, sm_file_2), header=None)
+            sm_df = pd.concat([sm_df, sm_df_2], axis=0)
 
-        # Calculate the start and end index for the sequence
-        start_index = index % self.num_rows
-        end_index = start_index + self.sequence_length
+        # Get the sequence
+        sequence_X = sm_df.iloc[start_idx:end_idx, 0].values
+        sequence_y = sm_df.iloc[end_idx, 0]
 
-        # Get the sequence for the smart meter
-        sm_sequence_X = sm_df.iloc[start_index:end_index, 1].values
-        sm_sequence_y = sm_df.iloc[end_index, 1].values
+        return sequence_X, sequence_y
 
-        # Get the sequence for each plug
-        plug_sequences_X = {}
-        plug_sequences_y = {}
-        for i in range(self.num_appliances):
-            plug_sequences_X[i] = plug_dfs[i].iloc[start_index:end_index, 1].values
-            plug_sequences_y[i] = plug_dfs[i].iloc[end_index, 1].values
-
-        print(sm_sequence_X, sm_sequence_y)
+    def __getitem__(self, idx):
+        sm_sequence = self.get_sm_sequence(idx)
+        return sm_sequence
