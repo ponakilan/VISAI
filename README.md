@@ -22,10 +22,7 @@ cd VISAI
 ```
 
 Explore the data documentation to understand the dataset structure:
-[a relative link](data/01_doc.txt)
-[a relative link](data/READ_ME_FIRST.txt)
+[01_doc.txt](data/01_doc.txt)
+[READ_ME_FIRST.txt](data/READ_ME_FIRST.txt)
 
-Check out the dataset implementation in the dataset folder for loading training sequences.
-
-## Usage
-Our project leverages LSTM Neural Networks for power consumption forecasting. To train and test the model, follow the instructions in the relevant sections of the codebase.
+Check out the dataset implementation in the [dataset](dataset/) folder for loading training sequences.
