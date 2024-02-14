@@ -59,7 +59,7 @@ class PowerConsumptionDataset(Dataset):
                 df.to_csv(os.path.join(self.data_dir, f'concat/{file}'), index=False)
 
     def __len__(self):
-        return len(os.listdir(os.path.join(self.data_dir, 'concat')))*86400 - self.sequence_length
+        return len(os.listdir(os.path.join(self.data_dir, 'concat')))*86400 - self.sequence_length - 1
     
     def __getitem__(self, idx):
         # Get the list of files
@@ -70,7 +70,7 @@ class PowerConsumptionDataset(Dataset):
 
         # Calculate the start and end index
         start_idx = idx % self.num_rows
-        end_idx = idx + self.sequence_length
+        end_idx = start_idx + self.sequence_length
 
         # Open the file
         df = pd.read_csv(os.path.join(self.data_dir, f'concat/{files[file_idx]}'))
