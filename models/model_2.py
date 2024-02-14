@@ -9,14 +9,6 @@ class ConsumptionPredictor(nn.Module):
         self.linear = nn.Linear(in_features=5, out_features=1)
 
     def forward(self, x):
-       
-        x = self.conv1d_1(x)
-        x = torch.relu(x)
-        
-        x = self.conv1d_2(x)
-        x = torch.relu(x)
-        
-        x = torch.transpose(x, 1, 2)
         x, _ = self.lstm(x)
         x = x[:, -1, :]
         x = self.linear(x)
