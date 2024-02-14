@@ -17,7 +17,7 @@ def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, 
             run.log({"loss": last_loss})
             running_loss = 0.0
 
-        return last_loss
+    return last_loss
 
 def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interval, device):
     for i in range(epochs):
