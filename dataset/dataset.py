@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 
 
 class PowerConsumptionDataset(Dataset):
-    def __init__(self, data_dir: str, sm_path: str, plugs_path: str, num_rows: int, sequence_length: int):
+    def __init__(self, data_dir: str, sm_path: str, plugs_path: str, num_rows: int, sequence_length: int, max_len: int):
         self.data_dir = data_dir
         self.sm_path = sm_path
         self.plugs_path = plugs_path
@@ -59,7 +59,10 @@ class PowerConsumptionDataset(Dataset):
                 df.to_csv(os.path.join(self.data_dir, f'concat/{file}'), index=False)
 
     def __len__(self):
-        return len(os.listdir(os.path.join(self.data_dir, 'concat')))*86400 - self.sequence_length - 1
+        if self.max_len > len(os.listdir(os.path.join(self.data_dir, 'concat')))*86400 - self.sequence_length - 1:
+            return len(os.listdir(os.path.join(self.data_dir, 'concat')))*86400 - self.sequence_length - 1
+        else:
+            return self.max_len
     
     def __getitem__(self, idx):
         # Get the list of files
