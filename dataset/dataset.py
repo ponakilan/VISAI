@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
+import functools
 
 
 class PowerConsumptionDataset(Dataset):
@@ -11,6 +12,7 @@ class PowerConsumptionDataset(Dataset):
         self.plugs_path = plugs_path
         self.num_rows = num_rows
         self.sequence_length = sequence_length
+        self.max_len = max_len
 
         # Generate the dataset
         self.generate_dataset()
@@ -64,6 +66,7 @@ class PowerConsumptionDataset(Dataset):
         else:
             return self.max_len
     
+    @functools.lru_cache(maxsize=None)
     def __getitem__(self, idx):
         # Get the list of files
         files = os.listdir(os.path.join(self.data_dir, 'concat'))
