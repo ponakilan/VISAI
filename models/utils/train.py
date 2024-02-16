@@ -18,7 +18,7 @@ def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, 
             last_loss = running_loss/log_interval
             run.log({"loss": last_loss})
             running_loss = 0.0
-            torch.save(model, 'model_{epoch}_{i}.pt')
+            torch.save(model, f'model_{epoch}_{i}.pt')
 
     return last_loss
 
