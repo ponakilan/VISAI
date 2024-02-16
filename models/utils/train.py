@@ -1,4 +1,6 @@
-def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, device):
+import torch
+
+def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, epoch, device):
     model.train()
     running_loss = 0.0
     last_loss = 0.0
@@ -16,11 +18,12 @@ def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, 
             last_loss = running_loss/log_interval
             run.log({"loss": last_loss})
             running_loss = 0.0
+            torch.save(model, 'model_{epoch}_{i}.pt')
 
     return last_loss
 
 def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interval, device):
     for i in range(epochs):
         print(f"Epoch {i+1} started.")
-        epoch_loss = train_one_epoch(model, optimizer, criterion, train_dataloader, run, log_interval, device)
+        epoch_loss = train_one_epoch(model, optimizer, criterion, train_dataloader, run, log_interval,i,  device)
         print(f"Epoch loss: {epoch_loss}")
