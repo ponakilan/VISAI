@@ -1,3 +1,5 @@
 *__pycache__
 *concat
 wandb
+*batches
+dataloader1.py
