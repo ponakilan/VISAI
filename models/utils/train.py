@@ -1,4 +1,5 @@
 import torch
+from sklearn.metrics import r2_score
 
 def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, epoch, device):
     model.train()
@@ -26,4 +27,11 @@ def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interv
     for i in range(epochs):
         print(f"Epoch {i+1} started.")
         epoch_loss = train_one_epoch(model, optimizer, criterion, train_dataloader, run, log_interval,i,  device)
-        print(f"Epoch loss: {epoch_loss}")
+        outputs_l, targets_l = [], []
+        for i, (sequences, targets) in enumerate(train_dataloader):
+            outputs = model(sequences)
+            outputs_l.extend(outputs.reshape(targets.shape).detach().cpu().tolist())
+            targets_l.extend(targets.detach().cpu().tolist())
+        r2 = r2_score(targets_l, outputs_l)
+        run.log({"R2_Score": r2})
+        print(f"Epoch loss: {epoch_loss}\nAccuracy: {r2}")
