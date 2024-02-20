@@ -20,18 +20,18 @@ def train_one_epoch(model, optimizer, criterion, dataloader, run, log_interval, 
             run.log({"loss": last_loss})
             running_loss = 0.0
 
-    torch.save(model, f'model_{epoch}.pt')
     return last_loss
 
-def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interval, device):
+def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interval, device, save_path):
     for i in range(epochs):
         print(f"Epoch {i+1} started.")
         epoch_loss = train_one_epoch(model, optimizer, criterion, train_dataloader, run, log_interval,i,  device)
         outputs_l, targets_l = [], []
         for i, (sequences, targets) in enumerate(train_dataloader):
-            outputs = model(sequences)
+            outputs = model(sequences.to(device))
             outputs_l.extend(outputs.reshape(targets.shape).detach().cpu().tolist())
             targets_l.extend(targets.detach().cpu().tolist())
         r2 = r2_score(targets_l, outputs_l)
         run.log({"R2_Score": r2})
         print(f"Epoch loss: {epoch_loss}\nAccuracy: {r2}")
+        torch.save(model, f'{save_path}/model_{i}.pt')
