@@ -35,4 +35,4 @@ def train(model, optimizer, criterion, train_dataloader, epochs, run, log_interv
         r2 = r2_score(targets_l, outputs_l)
         run.log({"R2_Score": r2})
         print(f"Epoch loss: {epoch_loss}\nAccuracy: {r2}")
-        return model
+    return model
