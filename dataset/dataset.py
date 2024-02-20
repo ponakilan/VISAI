@@ -1,8 +1,9 @@
 import os
+import pickle
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-import functools
+from sklearn.preprocessing import StandardScaler
 
 
 class PowerConsumptionDataset(Dataset):
@@ -50,6 +51,9 @@ class PowerConsumptionDataset(Dataset):
             self.data = pd.concat([self.data, sm_df], ignore_index=True)
             if self.data.shape[0] > self.max_len:
                 break
+        scaler = StandardScaler()
+        self.data = pd.DataFrame(scaler.fit_transform(self.data.values))
+        pickle.dump(scaler, open(f'{self.data_dir}/scaler.pkl', 'wb'))
 
     def __len__(self):
         return self.data.shape[0] - self.sequence_length - 1
