@@ -3,4 +3,4 @@
 wandb
 *batches
 dataloader1.py
-model_*
+test.ipynb

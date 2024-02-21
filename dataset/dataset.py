@@ -1,5 +1,6 @@
 import os
 import pickle
+import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
@@ -63,7 +64,7 @@ class PowerConsumptionDataset(Dataset):
         end_idx = start_idx + self.sequence_length
 
         # Get the sequence and target
-        sequence = self.data.iloc[start_idx:end_idx, :].values.astype(np.float32)
-        target = np.array(self.data.iloc[end_idx, 0], dtype=np.float32)
+        sequence = torch.tensor(self.data.iloc[start_idx:end_idx, :].values.astype(np.float32))
+        target = torch.tensor(np.array(self.data.iloc[end_idx, 0], dtype=np.float32))
 
         return sequence, target
