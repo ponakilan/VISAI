@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
 class PowerConsumptionDataset(Dataset):
@@ -41,7 +41,7 @@ class PowerConsumptionDataset(Dataset):
 
     def generate_dataset(self):
         """
-        Generate the dataset by concatenating the smart meter data and the plug data. 
+        Generate the dataset by concatenating the smart meter data and the plugself.data. 
         The concatenated data is saved in the concat folder.
         """
         sm_files = os.listdir(self.sm_path)
@@ -54,7 +54,7 @@ class PowerConsumptionDataset(Dataset):
                 break
         scaler = StandardScaler()
         self.data = pd.DataFrame(scaler.fit_transform(self.data.values))
-        pickle.dump(scaler, open(f'{self.data_dir}/scaler.pkl', 'wb'))
+        pickle.dump(scaler, open(f'{self.data_dir}/cons_scaler.pkl', 'wb'))
 
     def __len__(self):
         return self.data.shape[0] - self.sequence_length - 1
@@ -65,6 +65,40 @@ class PowerConsumptionDataset(Dataset):
 
         # Get the sequence and target
         sequence = torch.tensor(self.data.iloc[start_idx:end_idx, :].values.astype(np.float32))
-        target = torch.tensor(np.array(self.data.iloc[end_idx, 0], dtype=np.float32))
+        target = torch.tensor(self.data.iloc[end_idx, 0].astype(np.float32))
 
         return sequence, target
+    
+
+class Recommendations(Dataset):
+    def __init__(self, csv_path: str):
+        self.data = pd.read_csv(csv_path).drop(columns=['Formatted Date'])
+
+        # Encode the text data
+        encoder = LabelEncoder()
+        self.data['Summary'] = encoder.fit_transform(self.data['Summary'])
+        self.data['Precip Type'] = encoder.fit_transform(self.data['Precip Type'])
+        self.data['Daily Summary'] = encoder.fit_transform(self.data['Daily Summary'])
+        self.data['lights'] = encoder.fit_transform(self.data['lights'])
+
+        # Separate X and y
+        self.X =self.data.iloc[:, :-4]
+        self.y =self.data.iloc[:, -4:]
+
+        # Standardize the data
+        X_scaler = StandardScaler().fit(X=self.X)
+        y_scaler = StandardScaler().fit(X=self.y)
+        self.X = X_scaler.transform(self.X)
+        self.y = y_scaler.transform(self.y)
+
+        # Save the scaler objects
+        pickle.dump(X_scaler, open('data/X_scaler.pkl', 'wb'))
+        pickle.dump(y_scaler, open('data/y_scaler.pkl', 'wb'))
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, index):
+        X = torch.tensor(self.X[index], dtype=torch.float32)
+        y = torch.tensor(self.y[index], dtype=torch.float32)
+        return X, y
