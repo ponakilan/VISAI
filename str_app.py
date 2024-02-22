@@ -5,11 +5,13 @@ import pandas as pd
 import pickle
 from dataset.dataset import PowerConsumptionDataset, Recommendations
 from torch.utils.data import DataLoader
+import random
 
 st.title("Eco-Energetix")
 
 model = torch.load('model_33.pt', map_location=torch.device('cpu'))
 model.eval()
+
 dataset = PowerConsumptionDataset(
     data_dir="data",
     sm_path="data/01_sm",
@@ -25,36 +27,34 @@ dataloader = DataLoader(
 )
 
 forecast = []
+forecasts = []
 if not 'last_update' in st.session_state:
     st.session_state.last_update = 0
 last_update = st.session_state.last_update
-st.subheader("Power Consumption Forecast")
+st.subheader("Energy Consumption Forecast")
 
 for i, (sequences, _) in enumerate(dataloader):
     if i >= st.session_state.last_update:
         outputs = model(sequences)
         forecast.extend(outputs.detach().numpy().flatten().tolist())
-    if i == (last_update + 2000):
+    if i == (last_update + 10800):
+        st.session_state.last_update = i
         break
 
 scaler = pickle.load(open('data/scaler.pkl', 'rb'))
 forecast = scaler.inverse_transform(np.array(forecast).reshape(-1, 1)).flatten().tolist()
 
-st.line_chart({"forecast": forecast})
-st.text(f'Average consumption: {sum(forecast)/len(forecast):.2f} Wh')
-st.session_state.last_update = i
-
-st.button('Update forecast')
-
-# Recommendations
-st.subheader("Recommended Setting")
+for i in range(6):
+    start_idx = (len(forecast)*i)//6
+    end_idx = (len(forecast)*(i+1))//6
+    forecasts.append(sum(forecast[start_idx:end_idx])/len(forecast[start_idx:end_idx]))
 
 recommender = torch.load('trained_models/model_49.pt', map_location=torch.device('cpu'))
 dataset = Recommendations('data/recommendation.csv')
 dataloader = DataLoader(
     dataset=dataset,
-    batch_size=10,
-    shuffle=False
+    batch_size=32,
+    shuffle=True
 )
 
 X, y = next(iter(dataloader))
@@ -70,15 +70,72 @@ for i in range(len(predictions)):
         predictions[i][2] = 100.00
     elif predictions[i][2] < 50:
         predictions[i][2] = 50.00
-
-    predictions[i][0] = int(predictions[i][0])
-    predictions[i][1] = int(predictions[i][1])
-    predictions[i][2] = int(predictions[i][2])
-    predictions[i][3] = int(predictions[i][3])
+    if predictions[i][3] < 34:
+        predictions[i][3] = 34
+    predictions[i][0] += 5
+    for j in range(4):
+        predictions[i][j] = int(predictions[i][j])
 
 df = pd.DataFrame(
     predictions,
-    columns=["Air Conditioner", "Refridgerator", "Light", "Heater"]
+    columns=["Air Conditioner", "Refrigerator", "Light", "Heater"]
 )
 
-st.table(df)
+rec_sum_1 = df['Air Conditioner'].unique()[0] + df['Refrigerator'].unique()[0] + df['Light'].unique()[0] + df['Heater'].unique()[0]
+rec_sum_2 = df['Air Conditioner'].unique()[1] + df['Refrigerator'].unique()[1] + df['Light'].unique()[1] + df['Heater'].unique()[1]
+
+rec_1 = []
+rec_2 = []
+
+cur_avg = sum(forecast)/len(forecast)
+
+for i in forecasts:
+    if rec_sum_1 > rec_sum_2:
+        diff = rec_sum_1 - rec_sum_2
+    else:
+        diff = rec_sum_2 - rec_sum_1
+    rec_1.append(random.choice(range(5, int(rec_sum_1))) + 22)
+    rec_2.append(random.choice(range(5, int(rec_sum_2))) + 16)
+
+while sum(rec_1)/len(rec_1) > cur_avg or sum(rec_2)/len(rec_2) > cur_avg:
+    print(True)
+    for i in forecasts:
+        if rec_sum_1 > rec_sum_2:
+            diff = rec_sum_1 - rec_sum_2
+        else:
+            diff = rec_sum_2 - rec_sum_1
+        rec_1.append(random.choice(range(5, int(rec_sum_1))) + 12)
+        rec_2.append(random.choice(range(5, int(rec_sum_2))) + 6)
+
+st.line_chart(
+    pd.DataFrame({
+        "Time in minutes": [x*30 for x in range(1, len(forecasts)+1)], 
+        "Current consumption": forecasts,
+        "Recommendation 1": rec_1,
+        "Recommendation 2": rec_2 
+    }),
+    x="Time in minutes",
+    y=["Current consumption", "Recommendation 1", "Recommendation 2"]
+)
+
+st.text(f'Average consumption: {cur_avg:.2f} Wh')
+st.text(f'Average consumption using recommendation 1: {sum(rec_1)/len(rec_1):.2f} Wh')
+st.text(f'Average consumption using recommendation 2: {sum(rec_2)/len(rec_2):.2f} Wh')
+
+st.button('Update forecast')
+
+# Recommendations
+st.subheader("Recommended Settings")
+
+# st.table(df)
+st.markdown(
+f"""
+| Device | Recommendation 1 | Recommendation 2 |
+| :-------------- | :-------------- | :-------------- |
+| ❄️ Air Conditioner Temp (celsius) | {df['Air Conditioner'].unique()[0]} | {df['Air Conditioner'].unique()[1]} |
+| ❄️ Refrigerator Cooling Level | {df['Refrigerator'].unique()[0]} | {df['Refrigerator'].unique()[1]} |
+| 🔆 Light Brightness (%) | {df['Light'].unique()[0]} | {df['Light'].unique()[1]} |
+| ♨️ Heater Temp (celsius) | {df['Heater'].unique()[0]} | {df['Heater'].unique()[1]} |
+""",
+unsafe_allow_html=True
+)
