@@ -99,15 +99,14 @@ for i in forecasts:
 
 while sum(rec_1)/len(rec_1) > cur_avg or sum(rec_2)/len(rec_2) > cur_avg:
     print(True)
+    rec_temp_1 = rec_1
+    rec_temp_2 = rec_2
     rec_1 = []
     rec_2 = []
-    for i in forecasts:
-        if rec_sum_1 > rec_sum_2:
-            diff = rec_sum_1 - rec_sum_2
-        else:
-            diff = rec_sum_2 - rec_sum_1
-        rec_1.append(random.choice(range(5, int(rec_sum_1))) + 22)
-        rec_2.append(random.choice(range(5, int(rec_sum_2))) + 16)
+    for i in rec_temp_1:
+        rec_1.append(i*0.8)
+    for i in rec_temp_2:
+        rec_2.append(j*0.8)
 
 while sum(rec_1)/len(rec_1) < 0.8 * cur_avg:
     print(True)
